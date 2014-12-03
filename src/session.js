@@ -1,5 +1,3 @@
-import './iframe.css!';
-
 
 export class ReEstablishTimeout extends Error {};
 
@@ -58,6 +56,8 @@ function tryReadingIframeLocation(iframe) {
 function createIframe(loginUrl) {
     var iframe = document.createElement('iframe');
     iframe.classList.add('panda-session-iframe');
+    // The re-auth iframe should not be shown
+    iframe.style.display = 'none';
 
     iframe.src = loginUrl;
     return iframe;
