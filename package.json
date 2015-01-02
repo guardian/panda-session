@@ -10,5 +10,6 @@
   "homepage": "https://github.com/guardian/panda-session",
   "main": "src/session.js",
   "author": "Sébastien Cevey <seb.cevey@guardian.co.uk>",
-  "license": "Apache-2"
+  "license": "Apache-2",
+  "format": "es6"
 }
