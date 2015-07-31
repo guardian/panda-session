@@ -1,7 +1,11 @@
+/* */
 
 export class ReEstablishTimeout extends Error {};
 
-export function reEstablishSession(loginUrl, maxWait) {
+export const reEstablishSession = oneAtATime(reEstablishSessionImpl);
+
+
+function reEstablishSessionImpl(loginUrl, maxWait) {
     var iframe = createIframe(loginUrl);
     var timeout = delay(maxWait).then(() => { throw new ReEstablishTimeout; });
     var reEstablished = waitForIframe(iframe, timeout);
@@ -79,4 +83,21 @@ function delay(duration) {
     return new Promise((resolve, _) => {
         setTimeout(resolve, duration);
     });
+}
+
+// Takes a function that returns a Promise and
+function oneAtATime(func) {
+    let currentExecution;
+
+    const reset = () => currentExecution = undefined;
+
+    return (...args) => {
+        if (currentExecution) {
+            return currentExecution;
+        } else {
+            currentExecution = func.apply(null, args);
+            currentExecution.then(reset, reset);
+            return currentExecution;
+        }
+    };
 }
