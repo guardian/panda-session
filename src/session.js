@@ -1,6 +1,7 @@
-/* */
-
 export class ReEstablishTimeout extends Error {};
+export class GoogleAuthException extends Error {};
+
+class NotReadyException extends Error {};
 
 export const reEstablishSession = oneAtATime(reEstablishSessionImpl);
 
@@ -32,11 +33,15 @@ function waitForLocation(iframe, timeout) {
     var throttleDelay = 50; // ms
 
     return tryReadingIframeLocation(iframe).
-        catch(() => {
-            // Race with timeout which rejects the promise and breaks the
-            // infinite loop
-            return Promise.race([delay(throttleDelay), timeout]).
-                then(() => waitForLocation(iframe, timeout));
+        catch(error => {
+            if (error instanceof NotReadyException) {
+                // Race with timeout which rejects the promise and breaks the
+                // infinite loop
+                return Promise.race([delay(throttleDelay), timeout]).
+                    then(() => waitForLocation(iframe, timeout));
+            } else {
+                return Promise.reject(error);
+            }
         });
 }
 
@@ -47,9 +52,17 @@ function tryReadingIframeLocation(iframe) {
             // we can sort of detect this by checking the location of the iframe
             // if the contentDocument object cannot be accessed, its due to a security error.
             // security error will occur when the frame is on a different origin
-            resolve(iframe.contentDocument.location);
+
+            // Heuristic to detect google auth error in the iframe document
+            const textContent = iframe.contentDocument.body.textContent;
+            if (textContent.indexOf('google-auth-exception') !== -1) {
+                console.log('Google Auth Exception: ', textContent);
+                reject(new GoogleAuthException(textContent));
+            } else {
+                resolve(iframe.contentDocument.location);
+            }
         } catch(e) {
-            reject(e);
+            reject(new NotReadyException);
         }
     });
 }
